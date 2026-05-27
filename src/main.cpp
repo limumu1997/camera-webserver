@@ -288,6 +288,21 @@ int app_wifi_rssi(void)
     return ap.rssi;
 }
 
+int app_wifi_signal_percent(void)
+{
+    int rssi = app_wifi_rssi();
+    if (!sta_connected) {
+        return 0;
+    }
+    if (rssi <= -90) {
+        return 0;
+    }
+    if (rssi >= -50) {
+        return 100;
+    }
+    return (rssi + 90) * 100 / 40;
+}
+
 static esp_err_t init_camera(void)
 {
     camera_config_t config = {};
@@ -312,7 +327,7 @@ static esp_err_t init_camera(void)
     config.xclk_freq_hz = settings.xclk_mhz * 1000000;
     config.frame_size = (framesize_t)settings.framesize;
     config.pixel_format = PIXFORMAT_JPEG;
-    config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+    config.grab_mode = CAMERA_GRAB_LATEST;
     config.fb_location = CAMERA_FB_IN_PSRAM;
     config.jpeg_quality = settings.quality;
     config.fb_count = settings.fb_count > 0 ? settings.fb_count : 1;
@@ -420,14 +435,15 @@ static void oled_task(void *pvParameters)
 
         // Streaming Metrics
         app_stream_metrics_t metrics = app_get_stream_metrics();
-        snprintf(buf, sizeof(buf), "FPS:%d.%d  Clients:%u", (int)(metrics.fps_x10 / 10), (int)(metrics.fps_x10 % 10), (unsigned int)metrics.active_clients);
+        snprintf(buf, sizeof(buf), "FPS:%d.%d", (int)(metrics.fps_x10 / 10), (int)(metrics.fps_x10 % 10));
         oled_draw_string(4, 0, buf);
 
-        // Memory Status
-        uint32_t free_heap = esp_get_free_heap_size();
-        uint32_t free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
-        snprintf(buf, sizeof(buf), "RAM:%uKB PS:%uMB", (unsigned int)(free_heap / 1024), (unsigned int)(free_psram / (1024 * 1024)));
-        oled_draw_string(6, 0, buf);
+        if (sta_connected) {
+            int signal = app_wifi_signal_percent();
+            const char *level = signal >= 75 ? "GOOD" : (signal >= 45 ? "OK" : "WEAK");
+            snprintf(buf, sizeof(buf), "WiFi:%d%% %s", signal, level);
+            oled_draw_string(6, 0, buf);
+        }
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }

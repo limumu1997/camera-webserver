@@ -58,6 +58,7 @@ bool app_wifi_ap_started(void);
 const char *app_wifi_ap_ssid(void);
 esp_ip4_addr_t app_wifi_sta_ip(void);
 int app_wifi_rssi(void);
+int app_wifi_signal_percent(void);
 esp_err_t app_wifi_reconfigure(const char *ssid, const char *password);
 
 void app_stream_client_delta(int delta);

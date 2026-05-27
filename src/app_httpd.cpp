@@ -1324,7 +1324,7 @@ static esp_err_t metrics_handler(httpd_req_t *req)
     snprintf(payload, sizeof(payload),
              "{\"uptime_ms\":%lld,\"heap_free\":%u,\"heap_min_free\":%u,\"psram_free\":%u,\"psram_total\":%u,"
              "\"cpu0\":%.1f,\"cpu1\":%.1f,\"temperature_c\":%.1f,"
-             "\"wifi\":{\"sta_connected\":%s,\"ap_started\":%s,\"ap_ssid\":\"%s\",\"rssi\":%d,\"ip\":\"%s\"},"
+             "\"wifi\":{\"sta_connected\":%s,\"ap_started\":%s,\"ap_ssid\":\"%s\",\"rssi\":%d,\"signal\":%d,\"ip\":\"%s\"},"
              "\"stream\":{\"clients\":%u,\"frames\":%u,\"fps\":%.1f,\"avg_frame_ms\":%u,\"avg_frame_size\":%u,\"bandwidth_kbps\":%u}}",
              (long long)(esp_timer_get_time() / 1000),
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
@@ -1338,6 +1338,7 @@ static esp_err_t metrics_handler(httpd_req_t *req)
              app_wifi_ap_started() ? "true" : "false",
              app_wifi_ap_ssid(),
              app_wifi_rssi(),
+             app_wifi_signal_percent(),
              app_wifi_sta_connected() ? ip_buf : "",
              (unsigned)stream.active_clients,
              (unsigned)stream.frame_count,
@@ -1423,13 +1424,14 @@ static esp_err_t wifi_get_handler(httpd_req_t *req)
     const app_settings_t *cfg = app_get_settings();
     char payload[512];
     snprintf(payload, sizeof(payload),
-             "{\"ssid\":\"%s\",\"sta_connected\":%s,\"ap_started\":%s,\"ap_ssid\":\"%s\",\"ip\":\"%s\",\"rssi\":%d}",
+             "{\"ssid\":\"%s\",\"sta_connected\":%s,\"ap_started\":%s,\"ap_ssid\":\"%s\",\"ip\":\"%s\",\"rssi\":%d,\"signal\":%d}",
              cfg->ssid,
              app_wifi_sta_connected() ? "true" : "false",
              app_wifi_ap_started() ? "true" : "false",
              app_wifi_ap_ssid(),
              app_wifi_sta_connected() ? ip_buf : "",
-             app_wifi_rssi());
+             app_wifi_rssi(),
+             app_wifi_signal_percent());
     return send_json_text(req, payload);
 }
 
